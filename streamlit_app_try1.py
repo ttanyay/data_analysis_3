@@ -1,5 +1,7 @@
 # Header1
 
+pip install matplotlib
+
 import streamlit as st
 
 st.title("My First Streamlit App")
