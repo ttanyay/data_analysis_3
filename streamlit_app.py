@@ -1,13 +1,3 @@
-# Header1
-
-pip install matplotlib
-
-import streamlit as st
-
-st.title("My First Streamlit App")
-st.header("Welcome to Streamlit")
-st.write("This is a simple Streamlit app running in VS Code.")
-
 import streamlit as st
 import numpy as np
 import pandas as pd
@@ -17,10 +7,15 @@ from sklearn.preprocessing import PolynomialFeatures, StandardScaler
 from sklearn.linear_model import LinearRegression
 from sklearn.metrics import mean_squared_error
 from sklearn.dummy import DummyRegressor
-from sklearn.metrics import mean_squared_error
 import requests
 from zipfile import ZipFile
 import io
+
+st.title("Extra Assignment - MSE Decomposition")
+st.header("Course 'Prediction with Machine Learning for Economists 2024/25 Winter'")
+st.header("Students: Ayazhan Toktargazy, Tatyana Yakushina")
+
+st.write("Data Source: UCI Machine Learning Repository")
 
 # Function to load dataset
 def load_data():
@@ -33,58 +28,6 @@ def load_data():
 
 # Load dataset
 students = load_data()
-X = students[['G1', 'G2']].values  # Using first two grades as features
-y = students['G3'].values  # Final grade as target
-
-# Train-test split
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-
-# Streamlit UI
-st.title("Bias-Variance Tradeoff Visualization")
-
-# Select polynomial degree
-degree = st.slider("Select Polynomial Degree", 1, 10, 2)
-
-# Feature transformation
-poly = PolynomialFeatures(degree=degree)
-X_train_poly = poly.fit_transform(X_train)
-X_test_poly = poly.transform(X_test)
-
-# Model training
-model = LinearRegression()
-model.fit(X_train_poly, y_train)
-y_train_pred = model.predict(X_train_poly)
-y_test_pred = model.predict(X_test_poly)
-
-# Calculate MSE
-train_mse = mean_squared_error(y_train, y_train_pred)
-test_mse = mean_squared_error(y_test, y_test_pred)
-
-st.write(f"Train MSE: {train_mse:.3f}")
-st.write(f"Test MSE: {test_mse:.3f}")
-
-# Plot Bias-Variance Tradeoff
-fig, ax = plt.subplots()
-ax.scatter(y_train, y_train_pred, label='Train Predictions', alpha=0.6)
-ax.scatter(y_test, y_test_pred, label='Test Predictions', alpha=0.6, color='red')
-ax.plot([min(y), max(y)], [min(y), max(y)], linestyle='dashed', color='black', label='Ideal Fit')
-ax.set_xlabel("True Values")
-ax.set_ylabel("Predicted Values")
-ax.legend()
-st.pyplot(fig)
-
-st.write("""This visualization demonstrates the bias-variance tradeoff. 
-- Low-degree models underfit (high bias, low variance).
-- High-degree models overfit (low bias, high variance).
-- The goal is to find a balance for optimal generalization.""")
-
-
-#####
-
-st.title("PART 1")
-
-# Load dataset
-students = load_data()
 X = students.drop("G3", axis=1)
 y = students["G3"]
 
@@ -93,9 +36,6 @@ X = pd.get_dummies(X, drop_first=True)
 
 # Train-test split
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-
-# Streamlit UI
-st.title("Bias-Variance Tradeoff with Multiple Models")
 
 # Define Models
 models = {
@@ -133,9 +73,9 @@ for name, model in models.items():
 
 # Display Metrics
 st.write("### Model Performance Metrics")
-st.write(pd.DataFrame({"MSE": mse, "Bias": bias, "Variance": variance, "Bias²": bias_squared}))
+st.dataframe(pd.DataFrame({"Model": models.keys(), "MSE": mse.values(), "Bias": bias.values(), "Bias²": bias_squared.values(), "Variance": variance.values()}))
 
-# Plot Actual vs Predicted
+# Display all four figures together
 st.write("### Model Predictions vs Actual G3")
 fig, axes = plt.subplots(2, 2, figsize=(15, 10))
 axes = axes.flatten()
@@ -158,6 +98,29 @@ fig, ax1 = plt.subplots(figsize=(10,6))
 x = np.arange(len(models))
 width = 0.2
 
+ax1.bar(x - width/2, list(variance.values()), width=width, label="Variance", color='orange')
+ax1.bar(x + width/2, list(mse.values()), width=width, label="MSE", color='green')
+ax1.set_xticks(x)
+ax1.set_xticklabels(models.keys(), rotation=15)
+ax1.set_ylabel("Variance / MSE")
+ax1.legend(loc="upper left")
+
+ax2 = ax1.twinx()
+ax2.plot(x, list(bias.values()), color='blue', marker='o', label="Bias")
+ax2.set_ylabel("Bias")
+ax2.legend(loc="upper right")
+
+plt.title("Bias-Variance Decomposition Across Models")
+st.pyplot(fig)
+
+
+# Bias-Variance Decomposition Plot
+st.write("### Bias-Variance Tradeoff Visualization")
+fig, ax1 = plt.subplots(figsize=(10,6))
+
+x = np.arange(len(models))
+width = 0.2
+
 ax1.bar(x - width, list(variance.values()), width=width, label="Variance", color='orange')
 ax1.bar(x, list(mse.values()), width=width, label="MSE", color='green')
 ax1.set_xticks(x)
@@ -171,4 +134,20 @@ ax2.set_ylabel("Bias²")
 ax2.legend(loc="upper right")
 
 plt.title("Bias², Variance, and MSE Across Models")
+st.pyplot(fig)
+
+# Actual vs Predicted Plot for Each Model
+st.write("### Actual vs Predicted for Each Model")
+fig, axes = plt.subplots(2, 2, figsize=(15, 10))
+axes = axes.flatten()
+
+for idx, (name, preds) in enumerate(predictions.items()):
+    axes[idx].scatter(y_test, preds, color="purple", alpha=0.6)
+    axes[idx].plot([y_test.min(), y_test.max()], [y_test.min(), y_test.max()], color="red", linestyle="--", label="Perfect Prediction")
+    axes[idx].set_title(f"{name}: Actual vs Predicted")
+    axes[idx].set_xlabel("Actual G3")
+    axes[idx].set_ylabel("Predicted G3")
+    axes[idx].legend()
+
+plt.tight_layout()
 st.pyplot(fig)
