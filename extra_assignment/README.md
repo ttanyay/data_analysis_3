@@ -2,6 +2,8 @@
 
 We aimed to **model how a student's final grade** might be influenced by various factors, including academic history, habits, and even motivational treats! 🍫✨
 
+Here is the [link to our app](https://dataanalysis3-pcz2gvtwq9ptei9hre3b2v.streamlit.app/)
+
 ## 🎯 Objective
 To simulate and analyze how the **final grade** depends on:
 - Previous grades 📈  
