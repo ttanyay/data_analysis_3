@@ -15,150 +15,12 @@ st.title("Extra Assignment - MSE Decomposition")
 st.header("Course 'Prediction with Machine Learning for Economists 2024/25 Winter'")
 st.header("Students: Ayazhan Toktargazy, Tatyana Yakushina")
 
-st.write("Data Source: UCI Machine Learning Repository")
+st.write("This assignment investigates the bias-variance tradeoff using both simulated and real-world data. The goal is to analyze how different modeling complexities impact predictive accuracy, bias, and variance.")
 
-# Function to load dataset
-def load_data():
-    data_url = "https://archive.ics.uci.edu/ml/machine-learning-databases/00320/student.zip"
-    response = requests.get(data_url)
-    zip_file = ZipFile(io.BytesIO(response.content))
-    zip_file.extractall("./student_data")
-    students = pd.read_csv("./student_data/student-mat.csv", sep=";")
-    return students
+st.title("Part 1: Simulation Data")
 
-# Load dataset
-students = load_data()
-X = students.drop("G3", axis=1)
-y = students["G3"]
+st.write("In this section, we generate synthetic data to explore the effects of model complexity on prediction performance. We analyze how bias and variance change as we adjust the sample size and model type.")
 
-# Encode categorical variables
-X = pd.get_dummies(X, drop_first=True)
-
-# Train-test split
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-
-# Define Models
-models = {
-    "Dummy Model (High Bias)": DummyRegressor(strategy="mean"),
-    "Simple Linear (G1 Only)": LinearRegression(),
-    "Moderate Model (G1, G2, Study time, Failures)": LinearRegression(),
-    "Full Model (All Features)": LinearRegression()
-}
-
-features = {
-    "Simple Linear (G1 Only)": ["G1"],
-    "Moderate Model (G1, G2, Study time, Failures)": ["G1", "G2", "studytime", "failures"],
-    "Full Model (All Features)": X_train.columns.tolist()
-}
-
-predictions = {}
-mse = {}
-bias = {}
-variance = {}
-bias_squared = {}
-
-for name, model in models.items():
-    if name in features:
-        model.fit(X_train[features[name]], y_train)
-        preds = model.predict(X_test[features[name]])
-    else:
-        model.fit(X_train, y_train)
-        preds = model.predict(X_test)
-    
-    predictions[name] = preds
-    mse[name] = mean_squared_error(y_test, preds)
-    bias[name] = np.mean(preds) - np.mean(y_test)
-    variance[name] = np.var(preds)
-    bias_squared[name] = bias[name] ** 2
-
-# Display Metrics
-st.write("### Model Performance Metrics")
-st.dataframe(pd.DataFrame({"Model": models.keys(), "MSE": mse.values(), "Bias": bias.values(), "Bias²": bias_squared.values(), "Variance": variance.values()}))
-
-# Additional Plot
-st.write("### Model Predictions for Each Model with Metrics")
-fig, axes = plt.subplots(2, 2, figsize=(15, 10))
-axes = axes.flatten()
-
-for idx, preds in enumerate(predictions.values()):
-    axes[idx].scatter(X_test["G1"], y_test, color="blue", alpha=0.5, label="Actual G3")
-    axes[idx].scatter(X_test["G1"], preds, color="red", alpha=0.5, label="Predicted G3")
-    if idx < 2:
-        axes[idx].plot(X_test["G1"], preds, color="red", alpha=0.7, linewidth=1)
-    axes[idx].set_title(f"{list(models.keys())[idx]} Model\nBias: {bias[list(models.keys())[idx]]:.2f}, Variance: {variance[list(models.keys())[idx]]:.2f}, MSE: {mse[list(models.keys())[idx]]:.2f}")
-    axes[idx].set_xlabel("G1 (First Period Grade)")
-    axes[idx].set_ylabel("G3 (Final Grade)")
-    axes[idx].legend()
-
-plt.tight_layout()
-st.pyplot(fig)
-
-
-# Bias-Variance Decomposition Plot
-st.write("### Bias-Variance Tradeoff Visualization")
-fig, ax1 = plt.subplots(figsize=(10,6))
-
-x = np.arange(len(models))
-width = 0.2
-
-ax1.bar(x - width/2, list(variance.values()), width=width, label="Variance", color='orange')
-ax1.bar(x + width/2, list(mse.values()), width=width, label="MSE", color='green')
-ax1.set_xticks(x)
-ax1.set_xticklabels(models.keys(), rotation=15)
-ax1.set_ylabel("Variance / MSE")
-ax1.legend(loc="upper left")
-
-ax2 = ax1.twinx()
-ax2.plot(x, list(bias.values()), color='blue', marker='o', label="Bias")
-ax2.set_ylabel("Bias")
-ax2.legend(loc="upper right")
-
-plt.title("Bias-Variance Decomposition Across Models")
-st.pyplot(fig)
-
-
-# Bias-Variance Decomposition Plot
-st.write("### Bias-Variance Tradeoff Visualization")
-fig, ax1 = plt.subplots(figsize=(10,6))
-
-x = np.arange(len(models))
-width = 0.2
-
-ax1.bar(x - width, list(variance.values()), width=width, label="Variance", color='orange')
-ax1.bar(x, list(mse.values()), width=width, label="MSE", color='green')
-ax1.set_xticks(x)
-ax1.set_xticklabels(models.keys(), rotation=15)
-ax1.set_ylabel("Variance / MSE")
-ax1.legend(loc="upper left")
-
-ax2 = ax1.twinx()
-ax2.plot(x, list(bias_squared.values()), color='skyblue', marker='o', label="Bias²")
-ax2.set_ylabel("Bias²")
-ax2.legend(loc="upper right")
-
-plt.title("Bias², Variance, and MSE Across Models")
-st.pyplot(fig)
-
-# Actual vs Predicted Plot for Each Model
-st.write("### Actual vs Predicted for Each Model")
-fig, axes = plt.subplots(2, 2, figsize=(15, 10))
-axes = axes.flatten()
-
-for idx, (name, preds) in enumerate(predictions.items()):
-    axes[idx].scatter(y_test, preds, color="purple", alpha=0.6)
-    axes[idx].plot([y_test.min(), y_test.max()], [y_test.min(), y_test.max()], color="red", linestyle="--", label="Perfect Prediction")
-    axes[idx].set_title(f"{name}: Actual vs Predicted")
-    axes[idx].set_xlabel("Actual G3")
-    axes[idx].set_ylabel("Predicted G3")
-    axes[idx].legend()
-
-plt.tight_layout()
-st.pyplot(fig)
-
-
-st.title("Part 2: Simulation Data")
-
-# Write the Streamlit app code to a file
 # Here we have an option to choose a sample size (100, 500, 1000), and also comparison of MSE, Var, Bias on the graph
 
 import streamlit as st
@@ -312,3 +174,156 @@ ax.set_xlabel("Actual Grades")
 ax.set_ylabel("Predicted Grades")
 ax.legend()
 st.pyplot(fig)
+
+
+st.write("The first model using the dummy regressor represents high bias, considering no data patterns, and 0 variance, because predictions do not change, being stable.")
+st.write("The second model, simple linear regression model, is a usual model with moderate bias and variance.")
+st.write("The third model, polynomial regression, represents how with higher complexity bias is reduced but increases variance.")
+st.write("We have also experimented with sample size, simulating data on 100, 500, and 1000 students.")
+
+
+st.title("Part 2: Real data")
+st.write("Data Source: UCI Machine Learning Repository") 
+
+st.write("The real world data consists of student records from two Portuguese secondary schools and contains information about demographics, social factors, and academic performance.")
+st.write("We are predicting G3 (final grade) based on various student features, including G1 (first period grade), G2 (second period grade), study time, failures, and more.")
+
+# Function to load dataset
+def load_data():
+    data_url = "https://archive.ics.uci.edu/ml/machine-learning-databases/00320/student.zip"
+    response = requests.get(data_url)
+    zip_file = ZipFile(io.BytesIO(response.content))
+    zip_file.extractall("./student_data")
+    students = pd.read_csv("./student_data/student-mat.csv", sep=";")
+    return students
+
+# Load dataset
+students = load_data()
+X = students.drop("G3", axis=1)
+y = students["G3"]
+
+# Encode categorical variables
+X = pd.get_dummies(X, drop_first=True)
+
+# Train-test split
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+# Define Models
+models = {
+    "Dummy Model (High Bias)": DummyRegressor(strategy="mean"),
+    "Simple Linear (G1 Only)": LinearRegression(),
+    "Moderate Model (G1, G2, Study time, Failures)": LinearRegression(),
+    "Full Model (All Features)": LinearRegression()
+}
+
+features = {
+    "Simple Linear (G1 Only)": ["G1"],
+    "Moderate Model (G1, G2, Study time, Failures)": ["G1", "G2", "studytime", "failures"],
+    "Full Model (All Features)": X_train.columns.tolist()
+}
+
+predictions = {}
+mse = {}
+bias = {}
+variance = {}
+bias_squared = {}
+
+for name, model in models.items():
+    if name in features:
+        model.fit(X_train[features[name]], y_train)
+        preds = model.predict(X_test[features[name]])
+    else:
+        model.fit(X_train, y_train)
+        preds = model.predict(X_test)
+    
+    predictions[name] = preds
+    mse[name] = mean_squared_error(y_test, preds)
+    bias[name] = np.mean(preds) - np.mean(y_test)
+    variance[name] = np.var(preds)
+    bias_squared[name] = bias[name] ** 2
+
+# Display Metrics
+st.write("### Model Performance Metrics")
+st.dataframe(pd.DataFrame({"Model": models.keys(), "MSE": mse.values(), "Bias": bias.values(), "Bias²": bias_squared.values(), "Variance": variance.values()}))
+
+# Additional Plot
+st.write("### Model Predictions for Each Model with Metrics")
+fig, axes = plt.subplots(2, 2, figsize=(15, 10))
+axes = axes.flatten()
+
+for idx, preds in enumerate(predictions.values()):
+    axes[idx].scatter(X_test["G1"], y_test, color="blue", alpha=0.5, label="Actual G3")
+    axes[idx].scatter(X_test["G1"], preds, color="red", alpha=0.5, label="Predicted G3")
+    if idx < 2:
+        axes[idx].plot(X_test["G1"], preds, color="red", alpha=0.7, linewidth=1)
+    axes[idx].set_title(f"{list(models.keys())[idx]} Model\nBias: {bias[list(models.keys())[idx]]:.2f}, Variance: {variance[list(models.keys())[idx]]:.2f}, MSE: {mse[list(models.keys())[idx]]:.2f}")
+    axes[idx].set_xlabel("G1 (First Period Grade)")
+    axes[idx].set_ylabel("G3 (Final Grade)")
+    axes[idx].legend()
+
+plt.tight_layout()
+st.pyplot(fig)
+
+
+# Bias-Variance Decomposition Plot
+st.write("### Bias-Variance Tradeoff Visualization")
+fig, ax1 = plt.subplots(figsize=(10,6))
+
+x = np.arange(len(models))
+width = 0.2
+
+ax1.bar(x - width/2, list(variance.values()), width=width, label="Variance", color='orange')
+ax1.bar(x + width/2, list(mse.values()), width=width, label="MSE", color='green')
+ax1.set_xticks(x)
+ax1.set_xticklabels(models.keys(), rotation=15)
+ax1.set_ylabel("Variance / MSE")
+ax1.legend(loc="upper left")
+
+ax2 = ax1.twinx()
+ax2.plot(x, list(bias.values()), color='blue', marker='o', label="Bias")
+ax2.set_ylabel("Bias")
+ax2.legend(loc="upper right")
+
+plt.title("Bias-Variance Decomposition Across Models")
+st.pyplot(fig)
+
+
+# Bias-Variance Decomposition Plot
+st.write("### Bias-Variance Tradeoff Visualization")
+fig, ax1 = plt.subplots(figsize=(10,6))
+
+x = np.arange(len(models))
+width = 0.2
+
+ax1.bar(x - width, list(variance.values()), width=width, label="Variance", color='orange')
+ax1.bar(x, list(mse.values()), width=width, label="MSE", color='green')
+ax1.set_xticks(x)
+ax1.set_xticklabels(models.keys(), rotation=15)
+ax1.set_ylabel("Variance / MSE")
+ax1.legend(loc="upper left")
+
+ax2 = ax1.twinx()
+ax2.plot(x, list(bias_squared.values()), color='skyblue', marker='o', label="Bias²")
+ax2.set_ylabel("Bias²")
+ax2.legend(loc="upper right")
+
+plt.title("Bias², Variance, and MSE Across Models")
+st.pyplot(fig)
+
+# Actual vs Predicted Plot for Each Model
+st.write("### Actual vs Predicted for Each Model")
+fig, axes = plt.subplots(2, 2, figsize=(15, 10))
+axes = axes.flatten()
+
+for idx, (name, preds) in enumerate(predictions.items()):
+    axes[idx].scatter(y_test, preds, color="purple", alpha=0.6)
+    axes[idx].plot([y_test.min(), y_test.max()], [y_test.min(), y_test.max()], color="red", linestyle="--", label="Perfect Prediction")
+    axes[idx].set_title(f"{name}: Actual vs Predicted")
+    axes[idx].set_xlabel("Actual G3")
+    axes[idx].set_ylabel("Predicted G3")
+    axes[idx].legend()
+
+plt.tight_layout()
+st.pyplot(fig)
+
+st.write("As model complexity increases from the Dummy Regressor (predicting the mean) to using G1, then G1, G2, study time, failures, and finally all explanatory variables, bias decreases as the model captures more data patterns, while variance increases due to higher sensitivity to fluctuations in the training data—illustrating the classic bias-variance tradeoff.")
