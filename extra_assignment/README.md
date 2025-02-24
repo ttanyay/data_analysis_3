@@ -53,10 +53,6 @@ We analyzed how these models perform across different sample sizes — **100**, 
 
 ## Real Data Experiment
 
-We extended our analysis using the [UCI Student Performance Dataset](https://archive.ics.uci.edu/dataset/320/student+performance).
-
-## Real Data Experiment
-
 We extended our analysis using the [UCI Student Performance Dataset](https://archive.ics.uci.edu/dataset/320/student+performance), which includes real student data. The dependent variable, G3 (final grade), was modeled using four approaches:
 
 1. **Dummy Regressor** – Predicts the mean of the target, ignoring all input features.  
