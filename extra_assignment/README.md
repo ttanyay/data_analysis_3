@@ -61,3 +61,6 @@ We extended our analysis using the [UCI Student Performance Dataset](https://arc
 4. **Full Model** – Incorporating all explanatory variables available in the dataset.
 
 This multi-model approach allowed for a detailed exploration of the bias-variance tradeoff, comparing simple and complex models on real-world student performance data.
+
+🤖 Note: usage of AI on all stages of the work is confirmed.
+This project utilized AI assistance for brainstorming ideas and coding.
